@@ -1,4 +1,4 @@
-
+# /pay: process payment for a booking
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel

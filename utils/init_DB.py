@@ -7,42 +7,65 @@ load_dotenv()  # take environment variables from .env file
 CREATE_TABLES_SQL = """
 -- 1. Users Table (Stores Line info and Reputation)
 CREATE TABLE IF NOT EXISTS users (
-    user_id SERIAL PRIMARY KEY,
-    line_uid VARCHAR(255) UNIQUE NOT NULL,
-    name VARCHAR(100) NOT NULL,
-    phone VARCHAR(20),
-    category VARCHAR(50), -- What do they sell?
+    user_id         SERIAL PRIMARY KEY,
+    name            VARCHAR(100) NOT NULL,
+    description     TEXT,
+    line_uid        VARCHAR(255),
+    phone           VARCHAR(20),
+    category        VARCHAR(50), -- What do they sell?
     reputation_score INTEGER DEFAULT 100,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 2. Stalls Table (The Physical Locations)
+-- 2. Owners Table (Stores Line info and Reputation)
+CREATE TABLE IF NOT EXISTS owners (
+    owner_id         SERIAL PRIMARY KEY,
+    name            VARCHAR(100) NOT NULL,
+    description     TEXT,
+    line_uid        VARCHAR(255),
+    phone           VARCHAR(20),
+    category        VARCHAR(50),
+    reputation_score INTEGER DEFAULT 100,
+    created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 3. Stalls Table (The Physical Locations)
 CREATE TABLE IF NOT EXISTS stalls (
-    stall_id SERIAL PRIMARY KEY,
-    location_name VARCHAR(100) NOT NULL,
-    lat DECIMAL(9,6),                       -- Latitude for map
-    long DECIMAL(9,6),                      -- Longitude for map
-    facilities TEXT,                        -- e.g., "Electricity, Water"
-    owner_id INTEGER                        -- In real life, you'd link this to an Admin table
+    stall_id        SERIAL PRIMARY KEY,
+    title           VARCHAR(100) NOT NULL DEFAULT 'My Stall',
+    location_name   VARCHAR(100) NOT NULL,
+    address         VARCHAR(255),
+    lat             DECIMAL(9,6),            -- Latitude for map
+    long            DECIMAL(9,6),            -- Longitude for map
+    contact_info    VARCHAR(100),
+    facilities      TEXT,                    -- e.g., "Electricity, Water"
+    specifications  TEXT,                    -- e.g., size, amenities
+    owner_id        INTEGER REFERENCES owners(owner_id)
 );
--- 3. Slots Table (The Inventory - Time Slots)
+-- 4. Slots Table (The Inventory - Time Slots)
 CREATE TABLE IF NOT EXISTS slots (
-    slot_id SERIAL PRIMARY KEY,
-    stall_id INTEGER REFERENCES stalls(stall_id), -- Foreign Key: Links to Stalls table
-    date DATE NOT NULL,
-    price INTEGER NOT NULL,
-    status INTEGER DEFAULT 0 -- 0:Available, 1:Locked, 2:Booked, 3:Maintenance
+    slot_id         SERIAL PRIMARY KEY,
+    stall_id        INTEGER REFERENCES stalls(stall_id),
+    starting_date   DATE NOT NULL,
+    ending_date     DATE NOT NULL,
+    starting_time   TIME NOT NULL,
+    ending_time     TIME NOT NULL,
+    price           INTEGER NOT NULL,
+    discounted_price INTEGER,
+    total_quantity  INTEGER NOT NULL,
+    available_quantity INTEGER NOT NULL,
+    status          INTEGER DEFAULT 0 -- 0:Available, 1:Locked, 2:Booked, 3:Maintenance
 );
 
--- 4. Bookings Table (The Transaction Record)
+-- 5. Bookings Table (The Transaction Record)
 CREATE TABLE IF NOT EXISTS bookings (
-    booking_id SERIAL PRIMARY KEY,
-    slot_id INTEGER REFERENCES slots(slot_id), -- Foreign Key
-    user_id INTEGER REFERENCES users(user_id),       -- Foreign Key
-    payment_status VARCHAR(20) DEFAULT 'PENDING',
-    payment_method VARCHAR(50),
-    qr_token VARCHAR(100),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    booking_id      SERIAL PRIMARY KEY,
+    slot_id         INTEGER REFERENCES slots(slot_id),
+    user_id         INTEGER REFERENCES users(user_id),
+    payment_status  VARCHAR(20) DEFAULT 'PENDING',
+    payment_method  VARCHAR(50),
+    qr_token        VARCHAR(100),
+    created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 """
 

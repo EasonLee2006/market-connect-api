@@ -2,7 +2,8 @@
 # /create_user: Endpoint to create a new user
 # /delete_user: Endpoint to delete a user
 
-from fastapi import APIRouter, Depends, HTTPException
+from typing import Annotated
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from utils.database import get_db_connection
 from tabulate import tabulate
@@ -49,7 +50,7 @@ class CreateUserRequest(BaseModel):
     line_uid: str
     name: str
 @router.post("/create_user")
-def create_user( user: CreateUserRequest, conn = Depends(get_db_connection) ):
+def create_user( user: Annotated[CreateUserRequest, Query()], conn = Depends(get_db_connection) ):
     """
     Creates a new user in the database.
     """

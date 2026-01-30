@@ -1,3 +1,5 @@
+# /cancel_booking: cancel a booking by booking_id and free up the slot
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from utils.database import get_db_connection
@@ -50,6 +52,8 @@ def cancel_booking( request: CancelBookingRequest, conn = Depends(get_db_connect
         }
     except Exception as e:
         conn.rollback()
+        if isinstance(e, HTTPException):
+            raise e
         raise HTTPException(status_code=500, detail=f"Error cancelling booking: {e}")
     finally:
         cursor.close()
