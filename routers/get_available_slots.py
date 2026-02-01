@@ -15,13 +15,12 @@ def get_available_slots( conn = Depends(get_db_connection) ):
 
         query = """
         SELECT 
-            a.slot_id, 
-            a.date,
+            a.slot_id,
             a.price,
-            a.status
+            a.available_quantity
         FROM slots a
         JOIN stalls s ON a.stall_id = s.stall_id
-        WHERE a.status = 0; -- 0: Available
+        WHERE a.status = 0 AND a.available_quantity > 0;
         """
         cursor.execute(query)
         slots = cursor.fetchall()

@@ -1,34 +1,37 @@
 # /book: Endpoint to book a stall slot
 
-from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from typing import Annotated
+from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel, Field
 from utils.database import get_db_connection
 from routers.enums import SlotStatus
 
 router = APIRouter()
 
+def checkUserExists(cursor, user_id: int) -> bool:
+    cursor.execute(
+        "SELECT user_id FROM users WHERE user_id = %s;", 
+        (user_id,)
+    )
+    return cursor.fetchone() is not None
+
 class BookingRequest(BaseModel):
     user_id: int
     slot_id: int
+    quantity: int = Field(default=1, ge=1)
 @router.post("/book")
-def book_stall( request: BookingRequest, conn = Depends(get_db_connection) ):
+def book_stall( request: Annotated[BookingRequest, Query()], conn = Depends(get_db_connection) ):
     """
-    books a stall by user_id and slot_id
+    books a stall by user_id, slot_id, and quantity
     """
     cursor = conn.cursor()
     try:
-        # Check if user exists
-        cursor.execute(
-            "SELECT user_id FROM users WHERE user_id = %s;", 
-            (request.user_id,)
-        )
-        user_row = cursor.fetchone()
-        if not user_row:
+        if not checkUserExists(cursor, request.user_id):
             raise HTTPException(status_code=404, detail="User not found")
 
         # Check if slot exists and is available
         cursor.execute(
-            "SELECT status FROM slots WHERE slot_id = %s FOR UPDATE;", 
+            "SELECT status, available_quantity FROM slots WHERE slot_id = %s FOR UPDATE;", 
             (request.slot_id,)
         )
         slot_row = cursor.fetchone()
@@ -36,23 +39,28 @@ def book_stall( request: BookingRequest, conn = Depends(get_db_connection) ):
             raise HTTPException(status_code=404, detail="Slot not found")
         
         current_status = slot_row['status']
+        current_available_quantity = slot_row['available_quantity']
 
         if current_status != SlotStatus.AVAILABLE.value:
             conn.rollback() # Cancel transaction
             # Return 409 Conflict (standard for "state conflict")
-            raise HTTPException(status_code=409, detail="Too slow! This slot is already booked.")
+            raise HTTPException(status_code=409, detail="This slot is not available for booking")
         
+        if current_available_quantity < request.quantity:
+            conn.rollback() # Cancel transaction
+            raise HTTPException(status_code=409, detail=f"Not enough quantity available for booking. Requested: {request.quantity}, Available: {current_available_quantity}")
+
         cursor.execute(
-            "UPDATE slots SET status = %s WHERE slot_id = %s;",
-            (SlotStatus.BOOKED.value, request.slot_id)
+            "UPDATE slots SET available_quantity = available_quantity - %s WHERE slot_id = %s;",
+            (request.quantity, request.slot_id)
         )
         cursor.execute(
             """
-            INSERT INTO bookings (user_id, slot_id, payment_status) 
-            VALUES (%s, %s, 'PENDING') 
+            INSERT INTO bookings (user_id, slot_id, quantity, payment_status) 
+            VALUES (%s, %s, %s, 'PENDING') 
             RETURNING booking_id;
             """,
-            (request.user_id, request.slot_id)
+            (request.user_id, request.slot_id, request.quantity)
         )
         new_booking_id = cursor.fetchone()['booking_id']
 
@@ -61,7 +69,10 @@ def book_stall( request: BookingRequest, conn = Depends(get_db_connection) ):
         return {
             "status": "success", 
             "message": "Booking confirmed!", 
-            "booking_id": new_booking_id
+            "booking_id": new_booking_id,
+            "slot_id": request.slot_id,
+            "user_id": request.user_id,
+            "quantity": request.quantity
         }
     except Exception as e:
         conn.rollback() # If any error happens, undo everything

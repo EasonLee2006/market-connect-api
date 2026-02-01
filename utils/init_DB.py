@@ -60,8 +60,9 @@ CREATE TABLE IF NOT EXISTS slots (
 -- 5. Bookings Table (The Transaction Record)
 CREATE TABLE IF NOT EXISTS bookings (
     booking_id      SERIAL PRIMARY KEY,
-    slot_id         INTEGER REFERENCES slots(slot_id),
     user_id         INTEGER REFERENCES users(user_id),
+    slot_id         INTEGER REFERENCES slots(slot_id),
+    quantity        INTEGER NOT NULL DEFAULT 1,
     payment_status  VARCHAR(20) DEFAULT 'PENDING',
     payment_method  VARCHAR(50),
     qr_token        VARCHAR(100),
