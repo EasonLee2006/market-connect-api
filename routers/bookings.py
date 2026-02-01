@@ -1,7 +1,8 @@
 # /get_bookings: Endpoint to retrieve all bookings
 # /delete_booking: Endpoint to delete a booking
 
-from fastapi import APIRouter, Depends, HTTPException
+from typing import Annotated
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from utils.database import get_db_connection
 from tabulate import tabulate
@@ -47,7 +48,7 @@ def get_bookings_table(conn = Depends(get_db_connection)):
 class DeleteBookingRequest(BaseModel):
     booking_id: int
 @router.delete("/delete_booking")
-def delete_booking( request: DeleteBookingRequest, conn = Depends(get_db_connection) ):
+def delete_booking( request: Annotated[DeleteBookingRequest, Query()], conn = Depends(get_db_connection) ):
     """
     deletes a booking by booking_id,
     note: this only deletes the booking record, does not free up the slot

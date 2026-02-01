@@ -4,7 +4,7 @@
 
 from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from utils.database import get_db_connection
 from tabulate import tabulate
 from fastapi.responses import PlainTextResponse
@@ -33,7 +33,7 @@ def get_users_table(conn = Depends(get_db_connection)):
     """
     try:
         users = get_users(conn)
-    
+
         # Check if empty to avoid errors
         if not users:
             return "No users found."
@@ -47,10 +47,14 @@ def get_users_table(conn = Depends(get_db_connection)):
         raise HTTPException(status_code=500, detail=f"Error fetching users: {e}")
 
 class CreateUserRequest(BaseModel):
-    line_uid: str
     name: str
+    line_uid: str | None = None
+    description: str | None = None
+    phone: str | None = None
+    category: str | None = None
+    reputation_score: int = Field(default=100, ge=0, le=100)
 @router.post("/create_user")
-def create_user( user: Annotated[CreateUserRequest, Query()], conn = Depends(get_db_connection) ):
+def create_user( request: Annotated[CreateUserRequest, Query()], conn = Depends(get_db_connection) ):
     """
     Creates a new user in the database.
     """
@@ -58,11 +62,11 @@ def create_user( user: Annotated[CreateUserRequest, Query()], conn = Depends(get
     try:
         cursor.execute(
             """
-            INSERT INTO users (line_uid, name) 
-            VALUES (%s, %s) 
+            INSERT INTO users (name, line_uid, description, phone, category, reputation_score) 
+            VALUES (%s, %s, %s, %s, %s, %s) 
             RETURNING user_id;
             """,
-            (user.line_uid, user.name)
+            (request.name, request.line_uid, request.description, request.phone, request.category, request.reputation_score)
         )
         new_user_id = cursor.fetchone()['user_id']
         conn.commit()
@@ -70,7 +74,7 @@ def create_user( user: Annotated[CreateUserRequest, Query()], conn = Depends(get
             "status": "success",
             "message": "User created successfully!",
             "user_id": new_user_id,
-            "user_name": user.name
+            "user_name": request.name
         }
 
     except Exception as e:
@@ -82,7 +86,7 @@ def create_user( user: Annotated[CreateUserRequest, Query()], conn = Depends(get
 class DeleteUserRequest(BaseModel):
     user_id: int
 @router.delete("/delete_user")
-def delete_user( request: DeleteUserRequest, conn = Depends(get_db_connection) ):
+def delete_user( request: Annotated[DeleteUserRequest, Query()], conn = Depends(get_db_connection) ):
     """
     Deletes a user from the database.
     """

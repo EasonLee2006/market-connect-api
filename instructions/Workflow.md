@@ -15,7 +15,7 @@ cd market-connect-api
 3. **Add the Team Repo** as "Upstream":
 ```bash
 # Replace TEAM_URL with the link to the main project repo
-git remote add upstream https://github.com/TEAM_ORG/market-connect-api.git
+git remote add upstream https://github.com/hsnu1562/market-connect-api.git
 
 # Prevent accidental direct pushes to the main repo
 git remote set-url --push upstream no_push

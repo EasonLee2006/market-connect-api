@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from routers import users, stalls, slots, bookings, get_available_slots, book, pay, cancel_booking
+from routers import users, owners, stalls, slots, bookings, get_available_slots, book, pay, cancel_booking
 
 # Initialize the app
 app = FastAPI(
@@ -13,6 +13,7 @@ def read_root():
     return {"message": "Welcome to the Market Connect API! System is online"}
 
 app.include_router(users.router)
+app.include_router(owners.router)
 app.include_router(stalls.router)
 app.include_router(slots.router)
 app.include_router(bookings.router)

@@ -2,8 +2,9 @@
 # /create_slot: Endpoint to create a new slot
 # /delete_slot: Endpoint to delete a slot
 
-from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from typing import Annotated
+from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel, Field
 from utils.database import get_db_connection
 from tabulate import tabulate
 from fastapi.responses import PlainTextResponse
@@ -46,10 +47,15 @@ def get_slots_table(conn = Depends(get_db_connection)):
 
 class CreateSlotsRequest(BaseModel):
     stall_id: int
-    date: str
+    starting_date: str = Field(description="YYYY-MM-DD")
+    ending_date: str = Field(description="YYYY-MM-DD")
+    starting_time: str = Field(description="HH:MM:SS")
+    ending_time: str = Field(description="HH:MM:SS")
     price: int
+    discounted_price: int | None = None
+    total_quantity: int
 @router.post("/create_slot")
-def create_slot( request: CreateSlotsRequest, conn = Depends(get_db_connection) ):
+def create_slot( request: Annotated[CreateSlotsRequest, Query()], conn = Depends(get_db_connection) ):
     """
     creates a slot by stall_id, date, price
     """
@@ -57,11 +63,11 @@ def create_slot( request: CreateSlotsRequest, conn = Depends(get_db_connection) 
     try:
         cursor.execute(
             """
-            INSERT INTO slots (stall_id, date, price, status) 
-            VALUES (%s, %s, %s, 0) 
+            INSERT INTO slots (stall_id, starting_date, ending_date, starting_time, ending_time, price, discounted_price, total_quantity, available_quantity) 
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) 
             RETURNING slot_id;
             """,
-            (request.stall_id, request.date, request.price)
+            (request.stall_id, request.starting_date, request.ending_date, request.starting_time, request.ending_time, request.price, request.discounted_price, request.total_quantity, request.total_quantity)
         )
         new_slot_id = cursor.fetchone()['slot_id']
         conn.commit()
@@ -70,8 +76,13 @@ def create_slot( request: CreateSlotsRequest, conn = Depends(get_db_connection) 
             "message": "slot created successfully!",
             "slot_id": new_slot_id,
             "stall_id": request.stall_id,
-            "date": request.date,
-            "price": request.price
+            "starting_date": request.starting_date,
+            "ending_date": request.ending_date,
+            "starting_time": request.starting_time,
+            "ending_time": request.ending_time,
+            "price": request.price,
+            "discounted_price": request.discounted_price,
+            "total_quantity": request.total_quantity
         }
 
     except Exception as e:
@@ -83,7 +94,7 @@ def create_slot( request: CreateSlotsRequest, conn = Depends(get_db_connection) 
 class DeleteSlotsRequest(BaseModel):
     slot_id: int
 @router.delete("/delete_slot")
-def delete_slot( request: DeleteSlotsRequest, conn = Depends(get_db_connection) ):
+def delete_slot( request: Annotated[DeleteSlotsRequest, Query()], conn = Depends(get_db_connection) ):
     """
     deletes a slot by slot_id
     """
