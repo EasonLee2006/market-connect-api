@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS users (
     description     TEXT,
     line_uid        VARCHAR(255),
     phone           VARCHAR(20),
+    email           VARCHAR(100),
     category        VARCHAR(50), -- What do they sell?
     reputation_score INTEGER DEFAULT 100,
     created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -24,6 +25,7 @@ CREATE TABLE IF NOT EXISTS owners (
     description     TEXT,
     line_uid        VARCHAR(255),
     phone           VARCHAR(20),
+    email           VARCHAR(100),
     category        VARCHAR(50),
     reputation_score INTEGER DEFAULT 100,
     created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP

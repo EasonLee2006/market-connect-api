@@ -51,6 +51,7 @@ class CreateUserRequest(BaseModel):
     line_uid: str | None = None
     description: str | None = None
     phone: str | None = None
+    email: str | None = None
     category: str | None = None
     reputation_score: int = Field(default=100, ge=0, le=100)
 @router.post("/create_user")
@@ -62,11 +63,11 @@ def create_user( request: Annotated[CreateUserRequest, Query()], conn = Depends(
     try:
         cursor.execute(
             """
-            INSERT INTO users (name, line_uid, description, phone, category, reputation_score) 
-            VALUES (%s, %s, %s, %s, %s, %s) 
+            INSERT INTO users (name, line_uid, description, phone, email, category, reputation_score) 
+            VALUES (%s, %s, %s, %s, %s, %s, %s) 
             RETURNING user_id;
             """,
-            (request.name, request.line_uid, request.description, request.phone, request.category, request.reputation_score)
+            (request.name, request.line_uid, request.description, request.phone, request.email, request.category, request.reputation_score)
         )
         new_user_id = cursor.fetchone()['user_id']
         conn.commit()
