@@ -1,6 +1,7 @@
 # /pay: process payment for a booking
 
-from fastapi import APIRouter, Depends, HTTPException
+from typing import Annotated
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from utils.database import get_db_connection
 
@@ -10,7 +11,7 @@ class PaymentRequest(BaseModel):
     booking_id: int
     payment_method: str
 @router.put("/pay")
-def process_payment(request: PaymentRequest, conn = Depends(get_db_connection)):
+def process_payment(request: Annotated[PaymentRequest, Query()], conn = Depends(get_db_connection)):
     """
     processes a payment for a booking
     """
