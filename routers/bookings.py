@@ -66,7 +66,7 @@ def delete_booking( request: Annotated[DeleteBookingRequest, Query()], conn = De
         conn.commit()
         return {
             "status": "success",
-            "message": "Booking deleted successfully!"
+            "message": "Booking deleted successfully! warning: slot not freed up."
         }
     except Exception as e:
         conn.rollback()
